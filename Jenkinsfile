@@ -17,13 +17,23 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                sh 'docker run -d -p 6000:6000 event-registration-app'
+                sh 'docker run -d -p 5000:5000 event-registration-app'
             }
         }
 
         stage('Test Application') {
             steps {
                 sh 'echo "Application Deployed Successfully"'
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                sh '''
+                docker stop event-registration-app || true
+                docker rm event-registration-app || true
+                docker run -d -p 5000:5000 --name event-registration-app event-registration-app
+                '''
             }
         }
     }
