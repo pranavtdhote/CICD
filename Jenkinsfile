@@ -18,8 +18,8 @@ pipeline {
         stage('Run Container') {
             steps {
                 sh '''
-                docker stop event-registration-app || true
-                docker rm event-registration-app || true
+                docker ps -q --filter "publish=5000" | xargs -r docker stop
+                docker ps -aq --filter "publish=5000" | xargs -r docker rm
                 docker run -d -p 5000:5000 --name event-registration-app event-registration-app
                 '''
             }
