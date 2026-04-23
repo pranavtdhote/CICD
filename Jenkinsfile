@@ -17,7 +17,11 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                sh 'docker run -d -p 5000:5000 event-registration-app'
+                sh '''
+                docker stop event-registration-app || true
+                docker rm event-registration-app || true
+                docker run -d -p 5000:5000 --name event-registration-app event-registration-app
+                '''
             }
         }
 
@@ -27,14 +31,6 @@ pipeline {
             }
         }
 
-        stage('Run Container') {
-            steps {
-                sh '''
-                docker stop event-registration-app || true
-                docker rm event-registration-app || true
-                docker run -d -p 5000:5000 --name event-registration-app event-registration-app
-                '''
-            }
-        }
+
     }
 }
