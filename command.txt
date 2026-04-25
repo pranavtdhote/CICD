@@ -1,14 +1,28 @@
-git clone https://github.com/pranavtdhote/event-registration-devops.git
-cd event-registration-devops
+Pull Jenkins Image
+docker pull jenkins/jenkins:lts
 
-docker run -d -p 8080:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home -v //var/run/docker.sock:/var/run/docker.sock jenkins/jenkins:lts
+Create Docker Volume (for persistent Jenkins data)
+docker volume create jenkins_home
 
-docker exec -it -u root <container-id> bash
+Run Jenkins Container
+docker run -d --name jenkins-server -p 8080:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkins/jenkins:lts
 
+Check Running Container
+docker ps
+
+Access Jenkins Container Shell 
+docker exec -it -u root jenkins-server bash
+
+Fix Docker Socket Permission
+(Allows Jenkins to run Docker commands)
 chmod 666 /var/run/docker.sock
 
+Install Docker Inside Jenkins Container
 apt update
 apt install -y docker.io
 
+Verify Docker Installation
 docker --version
+
+Verify Docker Access
 docker ps
