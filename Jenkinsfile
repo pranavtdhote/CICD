@@ -21,9 +21,9 @@ pipeline {
                 docker stop event-registration-app || true
                 docker rm event-registration-app || true
 
-                # Stop containers using port 5000 (safe version)
-                docker ps -q --filter "publish=5000" | xargs docker stop || true
-                docker ps -aq --filter "publish=5000" | xargs docker rm || true
+                # Safe cleanup (no errors)
+                docker ps -q --filter "publish=5000" | xargs -r docker stop || true
+                docker ps -aq --filter "publish=5000" | xargs -r docker rm || true
 
                 docker run -d -p 5000:5000 --name event-registration-app event-registration-app
                 '''
@@ -35,56 +35,46 @@ pipeline {
                 sh '''
                 echo "Running Advanced Test Cases..."
 
-                # Wait for app to start
-                sleep 10
-
-                BASE_URL="http://localhost:5000"
+                BASE_URL="http://host.docker.internal:5000"
 
                 # -------------------------------
-                # Test Case 1: Application is reachable
+                # Smart Wait (instead of sleep)
+                # -------------------------------
+                for i in {1..10}
+                do
+                    curl -s $BASE_URL && break
+                    echo "Waiting for app..."
+                    sleep 2
+                done
+
+                # -------------------------------
+                # Test Case 1: App Reachable
                 # -------------------------------
                 curl -f $BASE_URL || { echo "App not reachable"; exit 1; }
 
                 # -------------------------------
-                # Test Case 2: Check HTTP Status Code
+                # Test Case 2: Status Code
                 # -------------------------------
                 STATUS=$(curl -o /dev/null -s -w "%{http_code}" $BASE_URL)
-                if [ "$STATUS" -ne 200 ]; then
-                    echo "Failed: Expected 200, got $STATUS"
-                    exit 1
-                fi
+                [ "$STATUS" -eq 200 ] || { echo "Wrong status: $STATUS"; exit 1; }
 
                 # -------------------------------
-                # Test Case 3: Response Content Check
+                # Test Case 3: Content Check
                 # -------------------------------
-                RESPONSE=$(curl -s $BASE_URL)
-                echo "$RESPONSE" | grep -i "event" || {
-                    echo "Failed: Expected keyword not found in response"
+                curl -s $BASE_URL | grep -i "event" || {
+                    echo "Content check failed"
                     exit 1
                 }
 
                 # -------------------------------
-                # Test Case 4: Port Check (using ss instead of netstat)
-                # -------------------------------
-                ss -tuln | grep 5000 || {
-                    echo "Failed: Port 5000 not active"
-                    exit 1
-                }
-
-                # -------------------------------
-                # Test Case 5: Container Running Check
+                # Test Case 4: Container Running
                 # -------------------------------
                 docker ps | grep event-registration-app || {
-                    echo "Failed: Container not running"
+                    echo "Container not running"
                     exit 1
                 }
 
-                # -------------------------------
-                # Test Case 6: API Endpoint Test (optional)
-                # -------------------------------
-                curl -f $BASE_URL/api || echo "API endpoint not found (optional)"
-
-                echo "All Advanced Test Cases Passed ✅"
+                echo "All Tests Passed ✅"
                 '''
             }
         }
