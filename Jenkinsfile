@@ -5,7 +5,7 @@ pipeline {
 
         stage('Clone Repository') {
             steps {
-                git branch: 'main' , url: 'https://github.com/pranavtdhote/CICD.git'
+                git branch: 'main', url: 'https://github.com/pranavtdhote/CICD.git'
             }
         }
 
@@ -21,8 +21,9 @@ pipeline {
                 docker stop event-registration-app || true
                 docker rm event-registration-app || true
 
-                docker ps -q --filter "publish=5000" | xargs -r docker stop
-                docker ps -aq --filter "publish=5000" | xargs -r docker rm
+                # Stop containers using port 5000 (safe version)
+                docker ps -q --filter "publish=5000" | xargs docker stop || true
+                docker ps -aq --filter "publish=5000" | xargs docker rm || true
 
                 docker run -d -p 5000:5000 --name event-registration-app event-registration-app
                 '''
@@ -63,9 +64,9 @@ pipeline {
                 }
 
                 # -------------------------------
-                # Test Case 4: Port Check
+                # Test Case 4: Port Check (using ss instead of netstat)
                 # -------------------------------
-                netstat -tuln | grep 5000 || {
+                ss -tuln | grep 5000 || {
                     echo "Failed: Port 5000 not active"
                     exit 1
                 }
@@ -79,7 +80,7 @@ pipeline {
                 }
 
                 # -------------------------------
-                # Test Case 6: API Endpoint Test (if exists)
+                # Test Case 6: API Endpoint Test (optional)
                 # -------------------------------
                 curl -f $BASE_URL/api || echo "API endpoint not found (optional)"
 
@@ -91,10 +92,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Build SUCCESS: Application deployed and tested successfully!'
+            echo 'Build SUCCESS: Application deployed and tested successfully!'
         }
         failure {
-            echo '❌ Build FAILED: Check logs for errors.'
+            echo 'Build FAILED: Check logs for errors.'
         }
         always {
             echo 'Pipeline execution completed.'
