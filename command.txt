@@ -1,28 +1,134 @@
-Pull Jenkins Image
+# =========================================================
+# STEP 1: PULL JENKINS IMAGE
+# =========================================================
+
 docker pull jenkins/jenkins:lts
 
-Create Docker Volume (for persistent Jenkins data)
+# =========================================================
+# STEP 2: CREATE DOCKER VOLUME
+# (Stores Jenkins data permanently)
+# =========================================================
+
 docker volume create jenkins_home
 
-Run Jenkins Container
+
+# =========================================================
+# STEP 3: RUN JENKINS CONTAINER
+# Port 8080 = Jenkins Web UI
+# Port 50000 = Jenkins Agent Communication
+# Docker socket = Jenkins can run Docker commands
+# =========================================================
+
 docker run -d --name jenkins-server -p 8080:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkins/jenkins:lts
 
-Check Running Container
+
+# =========================================================
+# STEP 4: VERIFY CONTAINER IS RUNNING
+# =========================================================
+
 docker ps
 
-Access Jenkins Container Shell 
+
+# =========================================================
+# STEP 5: GET JENKINS INITIAL ADMIN PASSWORD
+# (Use this to unlock Jenkins in browser)
+# =========================================================
+
+docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword
+
+
+# =========================================================
+# STEP 6: OPEN JENKINS IN BROWSER
+# =========================================================
+
+# URL:
+# http://localhost:8080
+
+
+# =========================================================
+# STEP 7: ACCESS JENKINS CONTAINER SHELL AS ROOT
+# =========================================================
+
 docker exec -it -u root jenkins-server bash
 
-Fix Docker Socket Permission
-(Allows Jenkins to run Docker commands)
+
+# =========================================================
+# STEP 8: FIX DOCKER SOCKET PERMISSION
+# (Allows Jenkins to run Docker commands)
+# RUN INSIDE CONTAINER
+# =========================================================
+
 chmod 666 /var/run/docker.sock
 
-Install Docker Inside Jenkins Container
+
+# =========================================================
+# STEP 9: UPDATE PACKAGE LIST
+# RUN INSIDE CONTAINER
+# =========================================================
+
 apt update
+
+
+# =========================================================
+# STEP 10: INSTALL DOCKER INSIDE JENKINS CONTAINER
+# RUN INSIDE CONTAINER
+# =========================================================
+
 apt install -y docker.io
 
-Verify Docker Installation
+
+# =========================================================
+# STEP 11: VERIFY DOCKER INSTALLATION
+# RUN INSIDE CONTAINER
+# =========================================================
+
 docker --version
 
-Verify Docker Access
+
+# =========================================================
+# STEP 12: VERIFY JENKINS CAN ACCESS DOCKER
+# RUN INSIDE CONTAINER
+# =========================================================
+
 docker ps
+
+
+# =========================================================
+# STEP 13: EXIT CONTAINER
+# =========================================================
+
+exit
+
+
+# =========================================================
+# STEP 14: OPTIONAL USEFUL COMMANDS
+# =========================================================
+
+# Check Jenkins logs
+docker logs jenkins-server
+
+# Live Jenkins logs
+docker logs -f jenkins-server
+
+# Restart Jenkins
+docker restart jenkins-server
+
+# Stop Jenkins
+docker stop jenkins-server
+
+# Start Jenkins again
+docker start jenkins-server
+
+# Remove Jenkins container
+docker rm -f jenkins-server
+
+
+# =========================================================
+# STEP 15: CLEANUP (IF NEEDED)
+# =========================================================
+
+# Remove Jenkins image
+docker rmi jenkins/jenkins:lts
+
+# Remove Jenkins volume
+docker volume rm jenkins_home
